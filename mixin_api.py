@@ -27,17 +27,18 @@ from urllib.parse import urlencode
 
 
 class MIXIN_API:
-    def __init__(self):
+    def __init__(self, mixin_config):
 
-        # robot's param
-        self.client_id = ""
-        self.client_secret = ""
-        self.pay_session_id = ""
-        self.asset_pin = ""
-        self.pin_token = ""
-        self.private_key = ""
+        # robot's config
+        self.client_id = mixin_config.client_id
+        self.client_secret = mixin_config.client_secret
+        self.pay_session_id = mixin_config.pay_session_id
+        self.pay_pin = mixin_config.pay_pin
+        self.pin_token = mixin_config.pin_token
+        self.private_key = mixin_config.private_key
+
+
         self.keyForAES = ""
-
         # mixin api base url
         self.api_base_url = 'https://api.mixin.one'
 
@@ -113,7 +114,7 @@ class MIXIN_API:
 
         tsstring = tszero + tsone + tstwo + tsthree + '\0\0\0\0'
 
-        toEncryptContent = self.asset_pin + tsstring + tsstring
+        toEncryptContent = self.pay_pin + tsstring + tsstring
 
         lenOfToEncryptContent = len(toEncryptContent)
         toPadCount = 16 - lenOfToEncryptContent % 16
@@ -188,6 +189,8 @@ class MIXIN_API:
 
         if body is not None:
             body = urlencode(body)
+        else:
+            body = ""
 
         if auth_token == "":
             token = self.genGETJwtToken(path, body, str(uuid.uuid4()))
