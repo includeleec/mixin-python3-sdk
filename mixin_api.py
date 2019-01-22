@@ -170,6 +170,7 @@ class MIXIN_API:
 
         # transfer obj => json string
         body_in_json = json.dumps(body)
+        print(auth_token)
 
         if auth_token == "":
             r = requests.post(url, json=body_in_json)
@@ -206,10 +207,10 @@ class MIXIN_API:
     generate Mixin Network POST http request
     """
     def __genNetworkPostRequest(self, path, body, auth_token=""):
-
+        print(body)
         # transfer obj => json string
         body_in_json = json.dumps(body)
-
+        print(body_in_json)
         # generate robot's auth token
         if auth_token == "":
             token = self.genPOSTJwtToken(path, body_in_json, str(uuid.uuid4()))
@@ -217,6 +218,8 @@ class MIXIN_API:
 
         # generate url
         url = self.__genUrl(path)
+
+        print(auth_token)
 
         r = requests.post(url, json=body, headers={"Authorization": "Bearer " + auth_token})
         result_obj = r.json()
@@ -274,32 +277,32 @@ class MIXIN_API:
     """
     Get users information by IDs.
     """
-    def getUsersInfo(self, user_ids, auth_token):
-        return self.__genPostRequest('/users/fetch', user_ids, auth_token)
+    def getUsersInfo(self, user_ids):
+        return self.__genNetworkPostRequest('/users/fetch', user_ids)
 
     """
     Get user's information by ID.
     """
-    def getUserInfo(self, user_id, auth_token):
-        return self.__genGetRequest('/users/' + user_id, auth_token)
+    def getUserInfo(self, user_id):
+        return self.__genNetworkGetRequest('/users/' + user_id)
 
     """
     Search user by Mixin ID or Phone Number.
     """
-    def SearchUser(self, q, auth_token):
-        return self.__genGetRequest('/search/' + q, auth_token)
+    def SearchUser(self, q):
+        return self.__genNetworkGetRequest('/search/' + q)
 
     """
     Rotate user’s code_id.
     """
-    def rotateUserQR(self, auth_token):
-        return self.__genGetRequest('/me/code', auth_token)
+    def rotateUserQR(self):
+        return self.__genNetworkGetRequest('/me/code')
 
     """
     Get my friends.
     """
-    def getMyFriends(self, auth_token):
-        return self.__genGetRequest('/friends', auth_token)
+    def getMyFriends(self):
+        return self.__genNetworkGetRequest('/friends')
 
     """
     Create a GROUP or CONTACT conversation.
@@ -395,14 +398,14 @@ class MIXIN_API:
         encrypted_pin = self.genEncrypedPin()
         body = {
             "asset_id": asset_id,
-            "pin": encrypted_pin,
+            "pin": encrypted_pin.decode('utf8'),
             "public_key": public_key,
             "label": label,
             "account_name": account_name,
             "account_tag": account_tag
         }
 
-        return self.__genNetworkPostRequest('/addresses/', body)
+        return self.__genNetworkPostRequest('/addresses', body)
 
 
     """
@@ -421,7 +424,7 @@ class MIXIN_API:
     Read an address by ID.
     """
     def getAddress(self, address_id):
-        return self.__genNetworkGetRequest('/addresses' + address_id)
+        return self.__genNetworkGetRequest('/addresses/' + address_id)
 
     """
     Transfer of assets between Mixin Network users.
