@@ -170,7 +170,6 @@ class MIXIN_API:
 
         # transfer obj => json string
         body_in_json = json.dumps(body)
-        print(auth_token)
 
         if auth_token == "":
             r = requests.post(url, json=body_in_json)
@@ -207,10 +206,10 @@ class MIXIN_API:
     generate Mixin Network POST http request
     """
     def __genNetworkPostRequest(self, path, body, auth_token=""):
-        print(body)
+
         # transfer obj => json string
         body_in_json = json.dumps(body)
-        print(body_in_json)
+
         # generate robot's auth token
         if auth_token == "":
             token = self.genPOSTJwtToken(path, body_in_json, str(uuid.uuid4()))
@@ -218,8 +217,6 @@ class MIXIN_API:
 
         # generate url
         url = self.__genUrl(path)
-
-        print(auth_token)
 
         r = requests.post(url, json=body, headers={"Authorization": "Bearer " + auth_token})
         result_obj = r.json()
