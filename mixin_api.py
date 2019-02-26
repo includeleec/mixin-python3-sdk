@@ -88,7 +88,7 @@ class MIXIN_API:
         encoded = jwt.encode({'uid':self.client_id, 'sid':self.pay_session_id,'iat':iat,'exp': exp, 'jti':jti,'sig':jwtSig}, self.private_key, algorithm='RS512')
         return encoded
 
-    def genEncrypedPin(self):
+    def genEncrypedPin(self, iterString = None):
         if self.keyForAES == "":
             privKeyObj = RSA.importKey(self.private_key)
 
@@ -113,8 +113,31 @@ class MIXIN_API:
         tsthree = chr(tsthree)
 
         tsstring = tszero + tsone + tstwo + tsthree + '\0\0\0\0'
+        if iterString is None:
+            ts = int(time.time() * 100000)
+            tszero = ts %   0x100
+            tsone = (ts %   0x10000) >> 8
+            tstwo = (ts %   0x1000000) >> 16
+            tsthree = (ts % 0x100000000) >> 24
+            tsfour= (ts %    0x10000000000) >> 32
+            tsfive= (ts %   0x10000000000) >> 40
+            tssix = (ts %   0x1000000000000) >> 48
+            tsseven= (ts %  0x1000000000000) >> 56
 
-        toEncryptContent = self.pay_pin + tsstring + tsstring
+
+            tszero = chr(tszero).encode('latin1').decode('latin1')
+            tsone = chr(tsone)
+            tstwo = chr(tstwo)
+            tsthree = chr(tsthree)
+            tsfour = chr(tsfour)
+            tsfive= chr(tsfive)
+            tssix = chr(tssix)
+            tsseven = chr(tsseven)
+            iterStringByTS = tszero + tsone + tstwo + tsthree + tsfour + tsfive + tssix + tsseven
+
+            toEncryptContent = self.pay_pin + tsstring + iterStringByTS
+        else:
+            toEncryptContent = self.pay_pin + tsstring + iterString
 
         lenOfToEncryptContent = len(toEncryptContent)
         toPadCount = 16 - lenOfToEncryptContent % 16
@@ -198,13 +221,13 @@ class MIXIN_API:
 
         r = requests.get(url, headers={"Authorization": "Bearer " + auth_token})
         result_obj = r.json()
-        print(result_obj)
         return result_obj
 
 
     """
     generate Mixin Network POST http request
     """
+    # TODO: request
     def __genNetworkPostRequest(self, path, body, auth_token=""):
 
         # transfer obj => json string
@@ -214,11 +237,18 @@ class MIXIN_API:
         if auth_token == "":
             token = self.genPOSTJwtToken(path, body_in_json, str(uuid.uuid4()))
             auth_token = token.decode('utf8')
-
+        headers = {
+            'Content-Type'  : 'application/json',
+            'Authorization' : 'Bearer ' + auth_token,
+        }
         # generate url
         url = self.__genUrl(path)
 
-        r = requests.post(url, json=body, headers={"Authorization": "Bearer " + auth_token})
+        r = requests.post(url, json=body, headers=headers)
+# {'error': {'status': 202, 'code': 20118, 'description': 'Invalid PIN format.'}}
+
+        # r = requests.post(url, data=body, headers=headers)
+# {'error': {'status': 202, 'code': 401, 'description': 'Unauthorized, maybe invalid token.'}}
         result_obj = r.json()
         print(result_obj)
         return result_obj
@@ -234,7 +264,7 @@ class MIXIN_API:
     """
     Read user's all assets.
     """
-    def getMyAssets(self, auth_token):
+    def getMyAssets(self, auth_token=""):
 
         return self.__genGetRequest('/assets', auth_token)
 
@@ -286,7 +316,7 @@ class MIXIN_API:
     """
     Search user by Mixin ID or Phone Number.
     """
-    def SearchUser(self, q, auth_token):
+    def SearchUser(self, q, auth_token=""):
         return self.__genGetRequest('/search/' + q, auth_token)
 
     """
@@ -336,24 +366,35 @@ class MIXIN_API:
     if auth_token is empty, it create robot' pin.
     if auth_token is set, it create messenger user pin.
     """
-    def createPin(self, new_pin, old_pin="", auth_token=""):
-        body = {
-            "old_pin": old_pin,
-            "new_pin": new_pin
-        }
+    def updatePin(self, new_pin, old_pin, auth_token=""):
+        old_inside_pay_pin = self.pay_pin
+        self.pay_pin = new_pin
+        newEncrypedPin = self.genEncrypedPin()
+        if old_pin == "":
+            body = {
+                "old_pin": "",
+                "pin": newEncrypedPin.decode()
+            }
+        else:
 
+            self.pay_pin = old_pin
+            oldEncryptedPin = self.genEncrypedPin()
+            body = {
+                "old_pin": oldEncryptedPin.decode(),
+                "pin": newEncrypedPin.decode()
+            }
+        self.pay_pin = old_inside_pay_pin
         return self.__genNetworkPostRequest('/pin/update', body, auth_token)
-
 
     """
     Verify PIN if is valid or not. For example, you can verify PIN before updating it.
     if auth_token is empty, it verify robot' pin.
     if auth_token is set, it verify messenger user pin.
     """
-    def verifyPin(self, pin, auth_token=""):
-
+    def verifyPin(self, auth_token=""):
+        enPin = self.genEncrypedPin()
         body = {
-            "pin": pin
+            "pin": enPin.decode()
         }
 
         return self.__genNetworkPostRequest('/pin/verify', body, auth_token)
@@ -390,19 +431,18 @@ class MIXIN_API:
     """
     Create an address for withdrawal, you can only withdraw through an existent address.
     """
-    def createAddress(self, asset_id, public_key="", label="", account_name="", account_tag=""):
+    def createAddress(self, asset_id, public_key = "", label = "", account_name = "", account_tag = ""):
 
-        encrypted_pin = self.genEncrypedPin()
         body = {
             "asset_id": asset_id,
-            "pin": encrypted_pin,
+            "pin": self.genEncrypedPin().decode(),
             "public_key": public_key,
             "label": label,
             "account_name": account_name,
-            "account_tag": account_tag
+            "account_tag": account_tag,
         }
-
-        return self.__genNetworkPostRequest('/addresses/', body)
+        print(body)
+        return self.__genNetworkPostRequest('/addresses', body)
 
 
     """
