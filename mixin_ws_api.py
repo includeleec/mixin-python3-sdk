@@ -202,6 +202,31 @@ class MIXIN_WS_API:
                               "message_id": str(uuid.uuid4()), "category": "APP_BUTTON_GROUP", "data": btn}
         MIXIN_WS_API.writeMessage(webSocketInstance, "CREATE_MESSAGE", gameEntranceParams)
 
+    @staticmethod
+    def sendAppCard(websocketInstance, in_conversation_id, to_user_id, asset_id, amount, icon_url, title, description, color="#0080FF", memo=""):
+        payLink = "https://mixin.one/pay?recipient=" + to_user_id + "&asset=" + asset_id + "&amount=" + \
+                amount + "&trace=" + str(uuid.uuid4()) + "&memo="
+        card =  '{"icon_url":"' + icon_url + '","title":"' + title + \
+                '","description":"' + description + '","action":"'+ payLink + '"}'
+        enCard = base64.b64encode(card.encode('utf-8')).decode(encoding='utf-8')
+        params = {"conversation_id": in_conversation_id,  "message_id": str(uuid.uuid4()),
+                  "category": "APP_CARD", "status": "SENT", "data": enCard}
+        return MIXIN_WS_API.writeMessage(websocketInstance, "CREATE_MESSAGE", params)
 
+    @staticmethod
+    def sendAppButtonGroup(websocketInstance, in_conversation_id, to_user_id, buttons):
+        buttonsStr = '[' + ','.join(str(btn) for btn in buttons) +']'
+        enButtons = base64.b64encode(buttonsStr.encode('utf-8')).decode(encoding='utf-8')
+        params = {"conversation_id": in_conversation_id,  "recipient_id": to_user_id,
+                "message_id": str(uuid.uuid4()),
+                "category": "APP_BUTTON_GROUP", "status": "SENT", "data": enButtons}
+        return MIXIN_WS_API.writeMessage(websocketInstance, "CREATE_MESSAGE", params)
+
+    @staticmethod
+    def packButton(to_user_id, asset_id, amount, label, color="#FF8000", memo=""):
+        payLink = "https://mixin.one/pay?recipient=" + to_user_id + "&asset=" + asset_id + "&amount=" + \
+                    amount + "&trace=" + str(uuid.uuid4()) + "&memo="
+        button  = '{"label":"' + label + '","color":"' + color + '","action":"' + payLink + '"}'
+        return button
 
 
