@@ -114,16 +114,15 @@ class MIXIN_API:
 
         tsstring = tszero + tsone + tstwo + tsthree + '\0\0\0\0'
         if iterString is None:
-            ts = int(time.time() * 100000)
-            tszero = ts %   0x100
-            tsone = (ts %   0x10000) >> 8
-            tstwo = (ts %   0x1000000) >> 16
+            ts = int(time.time() * 1000000)
+            tszero = ts % 0x100
+            tsone = (ts % 0x10000) >> 8
+            tstwo = (ts % 0x1000000) >> 16
             tsthree = (ts % 0x100000000) >> 24
-            tsfour= (ts %    0x10000000000) >> 32
-            tsfive= (ts %   0x10000000000) >> 40
-            tssix = (ts %   0x1000000000000) >> 48
-            tsseven= (ts %  0x1000000000000) >> 56
-
+            tsfour = (ts % 0x10000000000) >> 32
+            tsfive = (ts % 0x1000000000000) >> 40
+            tssix = (ts % 0x100000000000000) >> 48
+            tsseven = (ts % 0x10000000000000000) >> 56
 
             tszero = chr(tszero).encode('latin1').decode('latin1')
             tsone = chr(tsone)
